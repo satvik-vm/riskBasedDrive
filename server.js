@@ -21,12 +21,14 @@ app.get("/", (req, res) => {
 	})
 })
 
-// const client = new Client({
-// 	clientId: process.env.INTEGRATION_KEY,
-// 	clientSecret: process.env.SECRET_KEY,
-// 	apiHost: process.env.API_HOSTNAME,
-// 	redirectUrl: 'http://localhost:3000/redirect',
-// });
+const client = new Client({
+	clientId: process.env.INTEGRATION_KEY,
+	clientSecret: process.env.SECRET_KEY,
+	apiHost: process.env.API_HOSTNAME,
+	redirectUrl: `http://localhost:${PORT}/`,
+});
 
-// const status = await client.healthCheck();
+// console.log(client);
+
+const status = await client.healthCheck();
 // console.log(status)

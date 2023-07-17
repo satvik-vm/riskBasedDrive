@@ -7,7 +7,7 @@
   "scripts": {
     "test": "echo \"Error: no test specified\" && exit 1",
     "start": "node server.js",
-    "nodemon": "npm run nodemon"
+    "nodemon": "nodemon server.js"
   },
   "author": "",
   "license": "GPL-3.0-or-later",
