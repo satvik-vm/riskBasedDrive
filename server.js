@@ -1,34 +1,21 @@
-// require('dotenv').config();
-import dotenv from 'dotenv'
-dotenv.config()
+require('dotenv').config();
 
-// const express = require('express');
-import express from 'express'
-import { Client } from '@duosecurity/duo_universal';
+const express = require('express');
+var useragent = require('express-useragent');
 
 const app = express();
 
-const PORT = process.env.PORT || 8000;
+app.use(useragent.express());
+
+const PORT = process.env.PORT || 3000;
 
 app.listen(PORT, () => {
 	console.log(`Server is listening on ${PORT}`)
 });
 
 app.get("/", (req, res) => {
-	res.status(200).json({
+	console.log(req.useragent['source'])
+	res.status(201).json({
 		name: "satvik",
-		type: "string"
 	})
 })
-
-const client = new Client({
-	clientId: process.env.INTEGRATION_KEY,
-	clientSecret: process.env.SECRET_KEY,
-	apiHost: process.env.API_HOSTNAME,
-	redirectUrl: `http://localhost:${PORT}/`,
-});
-
-// console.log(client);
-
-const status = await client.healthCheck();
-// console.log(status)
