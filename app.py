@@ -2,7 +2,8 @@ from collections import defaultdict
 from flask import Flask
 import pandas as pd
 import math
-
+import pickle
+import os
 from tqdm import tqdm
 tqdm.pandas()
 
@@ -632,7 +633,31 @@ def login_test(login_attempt, features=["requestXRealIP", "trackingdatauserAgent
             login_attempt, user_logs, global_logs, num_users, features=features, global_hash_table=global_hash_table)
     global_hash_table.increase(login_attempt)
     global_logs.loc[len(global_logs)] = login_attempt
-    return risk_score
+    return str(risk_score)
+
+
+@app.route("/save")
+def save():
+    dir = os.getcwd()+"/pickle"
+    if (not os.path.exists(dir)):
+        os.makedirs(dir)
+    with open(dir+'/global_logs.pkl', 'wb') as file:
+        pickle.dump(global_logs, file)
+    with open(dir+'/global_hash_table.pkl', 'wb') as file:
+        pickle.dump(global_hash_table, file)
+    return ""
+
+
+@app.route("/load")
+def load():
+    dir = os.getcwd()+"/pickle"
+    global global_logs
+    global global_hash_table
+    with open(dir+'/global_logs.pkl', 'rb') as file:
+        global_logs = pickle.load(file)
+    with open(dir+'/global_hash_table.pkl', 'rb') as file:
+        global_hash_table = pickle.load(file)
+    return ""
 
 
 @app.route("/")
