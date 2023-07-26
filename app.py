@@ -1,5 +1,5 @@
 from collections import defaultdict
-from flask import Flask
+from flask import Flask, jsonify, request
 import pandas as pd
 import math
 import pickle
@@ -246,7 +246,14 @@ class OccurenceHashTable(HashTable):
         log -- New log entry
         """
         # For each value
-        for key, value in log._asdict().items():
+        dict = {}
+        if (type(log) is pd.DataFrame):
+            dict = log.to_dict('list')
+        else:
+            dict = log._asdict()
+        for key, value in dict.items():
+            if (type(value) is list):
+                value = value[0]
             # Add value only when key is in the hash table
             if key in self.__hash_table:
                 try:
@@ -398,8 +405,15 @@ def get_likelihood(login_history, login_attempt, feature, smoothing=True, hash_t
         appearance = hash_table.get(feature, feature_value)
     except (AttributeError, NotImplementedError) as e:
         # Hash table or hash table function does not exist, so we use the slower algorithm instead
+        # print("!!!\n")
+        # print(feature)
+        # print(login_attempt)
+        # print("\n!!!")
         appearance = len(login_history.query(
             "{} == @feature_value".format(feature)))
+
+    if (isinstance(appearance, pd.Series)):
+        appearance = appearance.tolist()[0]
 
     if smoothing == True or appearance == 0:
         unseen = get_unseen_values(login_history, feature, hash_table)
@@ -610,30 +624,61 @@ __columns_to_use = [
     "Login Successful"
 ]
 
-init_data = [[0, 8650157434636892312, '81.166.208.86', 'NO', 29695,
-             'Mozilla/5.0  (iPad; CPU OS 7_1 like Mac OS X) AppleWebKit/533.1 (KHTML, like Gecko Version/4.0 Mobile Safari/533.1 variation/277457', 'Android 2.3.3.2672', 'iOS 7.1', 'mobile', True]]  # Low Risk
-global_logs = pd.DataFrame(init_data, columns=__columns_to_use)
+__renamed_columns = [
+    "userid",
+    "requestXRealIP",
+    "ipASN",
+    "ipCountry",
+    "trackingdatauserAgent",
+    "browser_name_version",
+    "os_name_version",
+    "device_type"
+]
+
+init_data = {
+    "User ID": [8650157434636892],
+    "IP Address": ['81.166.208.86'],
+    "Country": ['NO'],
+    "ASN": [29695],
+    "User Agent String": ['Mozilla/5.0  (iPad; CPU OS 7_1 like Mac OS X) AppleWebKit/533.1 (KHTML, like Gecko Version/4.0 Mobile Safari/533.1 variation/277457'],
+    "Browser Name and Version": ['Android 2.3.3.2672'],
+    "OS Name and Version": ['iOS 7.1'],
+    "Device Type": ['mobile'],
+    "Login Successful": [True]
+}
+global_logs = pd.DataFrame.from_dict(init_data)
+rename_columns(global_logs)
 global_hash_table = OccurenceHashTable(global_logs, global_logs.columns)
 
 app = Flask(__name__)
 
 
-@app.route("/risk_analysis")
-def login_test(login_attempt, features=["requestXRealIP", "trackingdatauserAgent"]):
-    global_logs_groupby_userid = global_logs.groupby("userid")
-    userid = getattr(login_attempt, "userid")
-    timestamp = getattr(login_attempt, "Index")
+@app.route("/risk_analysis", methods=['POST'])
+def login_test():
+    global global_logs
+    global global_hash_table
+    features = ["requestXRealIP", "trackingdatauserAgent"]
+    login_attempt = request.json['data']
+    login_attempt = pd.DataFrame.from_dict(login_attempt)
+    rename_columns(login_attempt)
+    login_attempt.info()
+    global_logs_groupby_userid = global_logs.groupby(
+        "userid")
+    userid = getattr(login_attempt, "userid").tolist()[0]
     user_logs = global_logs_groupby_userid.get_group(
-        userid).before_timestamp(timestamp)
-    login_attempt_number = len(user_logs) + 1
+        userid)
+    login_attempt_number = len(user_logs)
     risk_score = 0
-    if login_attempt_number > 1:
+    if login_attempt_number > 0:
         num_users = global_hash_table.len_unique("userid")
         risk_score = freeman_rba_score(
             login_attempt, user_logs, global_logs, num_users, features=features, global_hash_table=global_hash_table)
     global_hash_table.increase(login_attempt)
-    global_logs.loc[len(global_logs)] = login_attempt
-    return str(risk_score)
+    global_logs.loc[len(global_logs)] = global_logs.iloc[len(global_logs)-1]
+    for i in __renamed_columns:
+        global_logs.at[len(global_logs)-1, i] = login_attempt.iloc[0][i]
+    print(global_logs)
+    return jsonify({"result": risk_score})
 
 
 @app.route("/save")
@@ -678,14 +723,15 @@ def hello():
     # We only consider successful login attempts for our risk score calculation
     global_logs = global_logs[global_logs['Login Successful'] == True]
     rename_columns(global_logs)
+
     # Sort the values by timestamp to fasten accessing the values (binary search)
     global_logs.sort_index(inplace=True)
 
     ###################################################################################################################
 
-    # data = [[8650157434636892312, '81.166.208.86', 'NO', 29695,
+    # data = [[0, 8650157434636892312, '81.166.208.86', 'NO', 29695,
     #          'Mozilla/5.0  (iPad; CPU OS 7_1 like Mac OS X) AppleWebKit/533.1 (KHTML, like Gecko Version/4.0 Mobile Safari/533.1 variation/277457', 'Android 2.3.3.2672', 'iOS 7.1', 'mobile', True]]  # Low Risk
-    # data = [[-2691043712332620674, '170.39.79.73', 'US', 393398,
+    # data = [[1, -2691043712332620674, '170.39.79.73', 'US', 393398,
     #          'Mozilla/5.0 (Linux; Android 5.5.1; CHM-U01) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/81.0.4044.2917.138 Mobile Safari/537.36 variation/90238', 'Chrome Mobile 81.0.4044.2917', 'Android 5.5.1', 'mobile', True]]  # High Risk
     # global_logs = pd.DataFrame(data, columns=__columns_to_use)
     # rename_columns(global_logs)
