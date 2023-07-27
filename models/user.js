@@ -48,8 +48,6 @@ userSchema.pre('save', async function(next) {
 })
 
 userSchema.methods.comparePassword = async function(password) {
-	console.log(password);
-	console.log(this.password);
 	return await bcrpyt.compare(password, this.password);
 }
 

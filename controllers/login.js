@@ -7,14 +7,14 @@ const crypto = require('crypto');
 const verifyOTP = require('./verifyOTP');
 const userModel = require("../models/user");
 const otpModel = require("../models/otp");
-const errResponse = require("../utils/errResponse");
+const ErrorResponse = require("../utils/errResponse");
 
 app.use(useragent.express());
 
 const len_of_otp = 6;
 const risk_threshold = 0.8;
 
-const login = async (req, res) => {
+const login = async (req, res, next) => {
 	console.log(req);
 	const {ip, email, password} = req.body.credentials;
 	const {userAgent} = req.useragent.source;
@@ -36,13 +36,13 @@ const login = async (req, res) => {
 	console.log(user);
 
 	if(!user){
-		return next(new errResponse("User not found", 401));
+		return next(new ErrorResponse("User not found", 401));
 	}
 
 	const isMatch = await user.comparePassword(password);
 
 	if(!isMatch){
-		return next(new errResponse("Invalid Credentials", 401));
+		return next(new ErrorResponse("Invalid Credentials", 401));
 	}
 
 	//? send data to flask server

@@ -23,8 +23,8 @@ otpSchema.pre('save', async function(next) {
 	next();
 })
 
-otpSchema.method.compareOTP = async function(otp){
-	return bcrpyt.compare(otp, this.otp);
+otpSchema.methods.compareOTP = async function(otp){
+	return await bcrpyt.compare(otp, this.otp);
 }
 
 const otpModel = new mongoose.model("otp", otpSchema);
