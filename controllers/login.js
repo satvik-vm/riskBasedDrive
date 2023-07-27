@@ -21,7 +21,7 @@ const login = async (req, res) => {
 	const {browser} = req.useragent.browser;
 	const {version} = req.useragent.version;
 	var country, region, city, asn;
-	console.log(`ip: ${ip}`);
+	// console.log(`ip: ${ip}`);
 	await axios.get(`https://ipapi.co/${ip}/json/`)
 	.then(res => {
 		console.log(res);
@@ -31,13 +31,15 @@ const login = async (req, res) => {
 		asn = res.data.asn;
 	});
 
-	const user = userModel.findOne({email: email});
+	const user = await userModel.findOne({email: email});
+
+	console.log(user);
 
 	if(!user){
 		return next(new errResponse("User not found", 401));
 	}
 
-	const isMatch = user.comparePassword(password);
+	const isMatch = await user.comparePassword(password);
 
 	if(!isMatch){
 		return next(new errResponse("Invalid Credentials", 401));
