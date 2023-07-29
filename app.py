@@ -662,32 +662,40 @@ def login_test():
     global global_logs
     global global_hash_table
     features = ["requestXRealIP", "trackingdatauserAgent"]
-    login_attempt = request.json['data']
-    login_attempt = pd.DataFrame.from_dict(login_attempt)
-    rename_columns(login_attempt)
+    login_attempt_df = request.json['data']
+    login_attempt_df = pd.DataFrame.from_dict(login_attempt_df)
+    rename_columns(login_attempt_df)
     global_logs_groupby_userid = global_logs.groupby(
         "userid")
-    userid = getattr(login_attempt, "userid").tolist()[0]
-    user_logs = global_logs_groupby_userid.get_group(
-        userid)
-    login_attempt_number = len(user_logs)
-    risk_score = 0
-    if login_attempt_number > 0:
-        num_users = global_hash_table.len_unique("userid")
-        risk_score = freeman_rba_score(
-            login_attempt, user_logs, global_logs, num_users, features=features, global_hash_table=global_hash_table)
-    print("!\n")
-    for login_attempt_tup in login_attempt.itertuples():
-        global_hash_table.increase(login_attempt_tup)
-    print("@\n")
+    for login_attempt in login_attempt_df.itertuples():
+        userid = getattr(login_attempt, "userid")
+        user_logs = global_logs_groupby_userid.get_group(
+            userid)
+        login_attempt_number = len(user_logs)
+        if login_attempt_number > 0:
+            num_users = global_hash_table.len_unique("userid")
+            risk_score = freeman_rba_score(login_attempt, user_logs, global_logs,
+                                           num_users, features=features, global_hash_table=global_hash_table)
+        global_hash_table.increase(login_attempt)
+    # userid = getattr(login_attempt, "userid").tolist()[0]
+    # user_logs = global_logs_groupby_userid.get_group(
+    #     userid)
+    # login_attempt_number = len(user_logs)
+    # risk_score = 0
+    # if login_attempt_number > 0:
+    #     num_users = global_hash_table.len_unique("userid")
+    #     risk_score = freeman_rba_score(
+    #         login_attempt, user_logs, global_logs, num_users, features=features, global_hash_table=global_hash_table)
+    # print("!\n")
+    # for login_attempt_tup in login_attempt.itertuples():
+    #     global_hash_table.increase(login_attempt_tup)
+    # print("@\n")
     global_logs.loc[len(global_logs)
                     ] = global_logs.iloc[len(global_logs)-1]
-    print("#\n")
     for i in __renamed_columns:
-        global_logs.at[len(global_logs)-1, i] = login_attempt.iloc[0][i]
-    print("$\n")
+        global_logs.at[len(global_logs)-1, i] = login_attempt_df.iloc[0][i]
+    global_logs.info()
     print(global_logs)
-    print("%\n")
     return jsonify({"result": risk_score})
 
 
