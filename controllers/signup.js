@@ -22,7 +22,7 @@ const signup = async(req, res) => {
 	});
 
 	const doc = await docs.create({
-		email: email,
+		userName: userName,
 	});
 
 	res.status(201).json({

@@ -1,13 +1,21 @@
 const mongoose = require("mongoose");
 
 const docCollectionSchema = new mongoose.Schema({
-	email: {
+	userName: {
 		type: String,
 		required: true,
 		unique: true,
 	},
 	doc: [{
-		type: Buffer,
+		address:{
+			type: String,
+		},
+		name:{
+			type: String,
+		},
+		dateTime:{
+			type: Date,
+		},
 		// required: true,
 	}]
 });

@@ -1,4 +1,3 @@
-//TODO: handle globalOTP
 const otpModel = require("../models/otp");
 
 const verifyOTP = async (req, res) => {

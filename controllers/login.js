@@ -12,7 +12,8 @@ const ErrorResponse = require("../utils/errResponse");
 app.use(useragent.express());
 
 const len_of_otp = 6;
-const risk_threshold = 0.8;
+const risk_threshold_high = 10;
+const risk_threshold_mid = 3;
 
 const login = async (req, res, next) => {
 	console.log(req);
@@ -51,7 +52,7 @@ const login = async (req, res, next) => {
 	// ? record response form flask and then use it set user risk
 	// ? if risk more than 0.8: high risk
 
-	if(response_from_flask <= risk_threshold){
+	if(response_from_flask <= risk_threshold_high){		// initially all access will be immutable
 		res.status(200).json({
 			risk: "low",
 			message: "Login successful"
@@ -59,24 +60,9 @@ const login = async (req, res, next) => {
 	}
 
 	else{
-		var otp = "";
-
-		for(var i = 0; i < len_of_otp; i++){
-			otp += crypto.randomInt(0, 10);
-		}
-
-		const otpRes = await otpModel.create({
-			email,
-			ip,
-			otp,
-		});
-
-		mailer(otp, email);
-
-		res.status(200).json({
+		res.status(202).json({
 			risk: "high",
-			message: "OTP sent to your email",
-			otp: otp,
+			message: "Redirect to security question",
 		})
 	}
 }
