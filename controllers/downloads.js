@@ -1,6 +1,3 @@
-const fs = require('fs');
-const document = require("../models/docs");
-
 const download = async (req, res) => {
 	const {userName, fileName} = req.body.file;
 	const dir = __dirname + '/../uploads/' + userName;

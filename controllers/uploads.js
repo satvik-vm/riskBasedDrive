@@ -1,5 +1,4 @@
 const fs = require('fs');
-const document = require("../models/docs");
 
 const upload = async (req, res)  => {
 	const {userName, fileName, fileBody, highSensitivity} = req.body.file;
