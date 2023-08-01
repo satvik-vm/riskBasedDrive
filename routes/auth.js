@@ -10,6 +10,7 @@ const deleteFunction = require("../controllers/delete");
 const verifyOTP = require('../controllers/verifyOTP');
 const verifyPassKey = require('../controllers/verifyPassKey');
 const verifySecurityQuestion = require('../controllers/verifySecurityQuestion');
+const permissionEnquiry = require("../controllers/permissionEnquiry");
 
 router.route("/login").post(login);
 router.route("/signup").post(signup);
@@ -19,5 +20,6 @@ router.route("/delete").post(deleteFunction);
 router.route("/verifyOTP").post(verifyOTP);
 router.route("/verifyPassKey").post(verifyPassKey);
 router.route("/verifySecurityQuestion").post(verifySecurityQuestion);
+router.route("/permissionEnquiry").get(permissionEnquiry);
 
 module.exports = router;

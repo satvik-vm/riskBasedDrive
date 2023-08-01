@@ -2,19 +2,17 @@ const express = require('express');
 const app = express();
 const useragent = require('express-useragent');
 const axios = require('axios');
-const nodemailer = require('nodemailer');
 const crypto = require('crypto');
-const verifyOTP = require('./verifyOTP');
 const userModel = require("../models/user");
-const otpModel = require("../models/otp");
+const permissionModel = require("../models/permission");
 const ErrorResponse = require("../utils/errResponse");
 const risk_analysis = require("../rbaCall");
 
 app.use(useragent.express());
 
 const len_of_otp = 6;
-const risk_threshold_high = 10;
 const risk_threshold_mid = 3;
+const risk_threshold_high = 10;
 
 const login = async (req, res, next) => {
 	const {ip, userName, password} = req.body.credentials;
@@ -59,12 +57,37 @@ const login = async (req, res, next) => {
     "Login Successful": [true]
 	}
 
-	var response_from_flask = risk_analysis(data);
+	//? flask part
+	// var response_from_flask = risk_analysis(data);
+	var response_from_flask = 11;
 	console.log(response_from_flask);
+	//? flat part end
+
+	const dateTime = new Date();
 
 	if(response_from_flask <= risk_threshold_high){		// initially all access will be immutable
+		var permissionType, riskLevel;
+		if(response_from_flask < risk_threshold_mid){
+			riskLevel = "low";
+			permissionType = 1;
+		}
+		else{
+			riskLevel = "mid";
+			permissionType = 0;
+		}
+		const userPermission = new permissionModel({
+			userID: userID,
+			timeStamp: dateTime,
+			permission: {
+				priority: 0,
+				type: permissionType,
+			}
+		})
+		userPermission.save().then((savedPermission) =>{
+			console.log("Basic permission granted");
+		});
 		res.status(200).json({
-			risk: "low",
+			risk: riskLevel,
 			message: "Login successful"
 		})
 	}
@@ -75,32 +98,6 @@ const login = async (req, res, next) => {
 			message: "Redirect to security question",
 		})
 	}
-}
-
-function mailer(otp, email){
-	var dateTime = new Date();
-	const transporter = nodemailer.createTransport({
-		service: process.env.SERVICE,
-		auth: {
-			user: process.env.EMAIL,
-			pass: process.env.PASSWORD,
-		}
-	});
-
-	var mailOptions = {
-		from: process.env.EMAIL,
-		to: email,
-		subject: "OTP for your login on " + dateTime.toISOString().slice(0,10) + " at " + dateTime.toISOString().slice(11,19) + " UTC",
-		text: "Your OTP is " + otp,
-	};
-
-	transporter.sendMail(mailOptions, function (error, info) {
-		if (error) {
-			console.log(error);
-		} else {
-			console.log("Email sent: " + info.response);
-		}
-	});
 }
 
 module.exports = login;
